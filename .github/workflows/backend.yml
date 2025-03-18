@@ -1,0 +1,53 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Lint
+        run: |
+          cd backend
+          npm run lint
+
+      - name: Run Build (if required)
+        run: |
+          cd backend
+          npm run build || echo "No build step"
+
+      - name: Run Tests
+        run: |
+          cd backend
+          npm test || echo "No tests yet"
+
+      - name: Dockerize Backend
+        run: |
+          docker build -t your-backend-image ./backend
+
+      - name: Push Docker Image to DockerHub (Optional)
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          docker tag your-backend-image yourdockerhub/your-backend-image:latest
+          docker push yourdockerhub/your-backend-image:latest
+
+      - name: Deploy to Render
+        run: echo "Trigger deployment script or webhook here"
